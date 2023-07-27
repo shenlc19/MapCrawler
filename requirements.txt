@@ -1,0 +1,4 @@
+requests==2.27.1
+ezdxf==1.0.3
+numpy==1.23.3
+pillow==9.2.0
