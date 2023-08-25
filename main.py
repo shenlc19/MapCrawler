@@ -22,7 +22,7 @@ style = "pl"
 z = 19
 
 dx = 3
-dy = 3
+dy = 4
 
 doc = ezdxf.new()
 msp = doc.modelspace()

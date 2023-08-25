@@ -1,5 +1,7 @@
 # finished
 import numpy as np
+from shapely.geometry import Polygon, MultiPolygon
+from shapely.ops import unary_union
 
 def T(H, b, a, c):
     q = a >> 2
@@ -100,47 +102,57 @@ def GetRoads(H, b):
             Tb(vtx=vtx, idx=idx, H=H, b=b, a=g, c=None, q=None, f=None, p=None, k=None)
     return vtx, idx
 
-def DrawElements(msp, dt, offset = [0, 0]):
-    edges = {}
-    tmp_offset = np.array(offset)
-    for v, e in dt:
-        x = []
-        tmp = np.array([0, 0])
-        # x.append(tmp)
-        for j in range(len(v) // 2):
-            xi = np.array(v[j * 2: j * 2 + 2])
-            tmp = tmp + xi
-            # print(tmp)
-            x.append(tmp / 100 + tmp_offset)
-            
-        # print(x)
-        # print(e)
-        for j in range(len(e) // 3):
-            # print (e[j * 3], e[j * 3 + 1])
-            # print((x[e[j * 3]][0], x[e[j * 3]][1]), (x[e[j * 3 + 1]][0], x[e[j * 3 + 1]][1]))
-            e1 = ((x[e[j * 3]][0], x[e[j * 3]][1]), (x[e[j * 3 + 1]][0], x[e[j * 3 + 1]][1]))
-            e2 = ((x[e[j * 3 + 2]][0], x[e[j * 3 + 2]][1]), (x[e[j * 3 + 1]][0], x[e[j * 3 + 1]][1]))
-            e3 = ((x[e[j * 3]][0], x[e[j * 3]][1]), (x[e[j * 3 + 2]][0], x[e[j * 3 + 2]][1]))
-            e1 = (sorted(e1)[0], sorted(e1)[1])
-            e2 = (sorted(e2)[0], sorted(e2)[1])
-            e3 = (sorted(e3)[0], sorted(e3)[1])
-            if e1 in edges:
-                edges[e1] += 1
+# convert to shapely polygon
+# remember to check whether coords should be divided by 100
+def ConvertToPolygonList(dt, offset=(0, 0), require_division=True):
+    tile_all_polygons = []
+    offset = np.array(offset)
+    for v, _ in dt:
+        plg = []
+        v = np.array(v)
+        if require_division:
+            v = v / 100
+        
+        n_points = len(v) // 2 - 1
+        st = v[:2]
+        plg.append(tuple(st + offset))
+        for i in range(n_points):
+            mv = v[(i + 1) << 1: (i + 2) << 1]
+            prev = st.copy()
+            st += mv
+            # msp.add_line(tuple(prev), tuple(st))
+            plg.append(tuple(st + offset))
+            pass
+        
+        plg = Polygon(plg)
+        if not plg.is_valid:
+            plg = plg.buffer(0)
+            # print(plg.is_valid)
+        tile_all_polygons.append(plg)
+    
+    return tile_all_polygons
+
+# new draw function
+def DrawPolygon(msp, polygon, offset=(0, 0)):
+    offset = np.array(offset)
+    contours = list(polygon.boundary.geoms)
+    for contour in contours:
+        coordinates = list(contour.coords)
+        for i in range(len(coordinates) - 1):
+            # delete duplicate border lines
+            if ((coordinates[i][0] == coordinates[i + 1][0] and abs(coordinates[i][0]) < 1e-2) 
+                or (coordinates[i][0] == coordinates[i + 1][0] and abs(coordinates[i][0] - 1024.0) < 1e-2)
+                or (coordinates[i][1] == coordinates[i + 1][1] and abs(coordinates[i][1]) < 1e-2)
+                or (coordinates[i][1] == coordinates[i + 1][1] and abs(coordinates[i][1] - 1024.0) < 1e-2)):
+                    # print(coordinates[i], coordinates[i + 1])
+                    pass
             else:
-                edges[e1] = 1
-            if e2 in edges:
-                edges[e2] += 1
-            else:
-                edges[e2] = 1
-            if e3 in edges:
-                edges[e3] += 1
-            else:
-                edges[e3] = 1
-    for edge in edges:
-        if edges[edge] == 1:
-            msp.add_line(edge[0], edge[1])
+                st = tuple(np.array(coordinates[i]) + offset)
+                ed = tuple(np.array(coordinates[i + 1]) + offset)
+                msp.add_line(st, ed)
 
 # ====== under construction ======
+# parse a single tile
 def Hc(b, msp, offset = [0, 0]):
     H = Uint32Array(b)
     # extract buildings
@@ -148,7 +160,14 @@ def Hc(b, msp, offset = [0, 0]):
     d = T(H, 0, h[0][0], h[0][0] + h[0][1])
     vtx, idx = Ub(H=H, b=b, a=d, c=None, q=None, f=None)
     dt = [(vtx[i], idx[i]) for i in range(len(vtx))]
-    DrawElements(msp, dt, offset)
+    if len(dt):
+        building_polygons = ConvertToPolygonList(dt)
+        building_polygons = unary_union(building_polygons)
+        DrawPolygon(msp, building_polygons, offset)
     vtx, idx = GetRoads(H=H, b=b)
     dt = [(vtx[i], idx[i]) for i in range(len(vtx))]
-    DrawElements(msp, dt, offset)
+    # DrawElements(msp, dt, offset)
+    if len(dt):
+        road_polygons = ConvertToPolygonList(dt)
+        road_polygons = unary_union(road_polygons)
+        DrawPolygon(msp, road_polygons, offset)
