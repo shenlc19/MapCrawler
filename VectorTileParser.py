@@ -133,7 +133,7 @@ def ConvertToPolygonList(dt, offset=(0, 0), require_division=True):
     return tile_all_polygons
 
 # new draw function
-def DrawPolygon(msp, polygon, offset=(0, 0)):
+def DrawPolygon(msp, polygon, offset=(0, 0), layer_info=None):
     offset = np.array(offset)
     contours = list(polygon.boundary.geoms)
     for contour in contours:
@@ -149,7 +149,10 @@ def DrawPolygon(msp, polygon, offset=(0, 0)):
             else:
                 st = tuple(np.array(coordinates[i]) + offset)
                 ed = tuple(np.array(coordinates[i + 1]) + offset)
-                msp.add_line(st, ed)
+                if layer_info:
+                    msp.add_line(st, ed, dxfattribs=layer_info)
+                else:
+                    msp.add_line(st, ed)
 
 # ====== under construction ======
 # parse a single tile
@@ -163,11 +166,11 @@ def Hc(b, msp, offset = [0, 0]):
     if len(dt):
         building_polygons = ConvertToPolygonList(dt)
         building_polygons = unary_union(building_polygons)
-        DrawPolygon(msp, building_polygons, offset)
+        DrawPolygon(msp, building_polygons, offset, layer_info={"layer": "建筑物"})
     vtx, idx = GetRoads(H=H, b=b)
     dt = [(vtx[i], idx[i]) for i in range(len(vtx))]
     # DrawElements(msp, dt, offset)
     if len(dt):
         road_polygons = ConvertToPolygonList(dt)
         road_polygons = unary_union(road_polygons)
-        DrawPolygon(msp, road_polygons, offset)
+        DrawPolygon(msp, road_polygons, offset, layer_info={"layer": "道路"})

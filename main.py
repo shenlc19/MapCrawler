@@ -33,11 +33,13 @@ udt = datetime.datetime.now().strftime('%Y%m%d')
 style = "pl"
 z = 19
 
-dx = 3
-dy = 4
+dx = 2
+dy = 2
 
 doc = ezdxf.new()
 msp = doc.modelspace()
+doc.layers.add(name='建筑物', color=2)
+doc.layers.add(name='道路')
 
 for x in range(center_x - dx, center_x + dx):
     for y in range(center_y - dy, center_y + dy):
