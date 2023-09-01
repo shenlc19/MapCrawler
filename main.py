@@ -4,6 +4,7 @@ import ezdxf
 import random
 import datetime
 import sys
+from tqdm import tqdm
 from RequestEncoder import *
 from VectorTileParser import *
 
@@ -41,15 +42,17 @@ msp = doc.modelspace()
 doc.layers.add(name='建筑物', color=2)
 doc.layers.add(name='道路')
 
-for x in range(center_x - dx, center_x + dx):
-    for y in range(center_y - dy, center_y + dy):
-        # time.sleep(random.uniform(0.7, 2.5))
-        myurl = geturl(x=x, y=y, z=z, styles=style, scaler=scale, showtext=showtext, udt=udt)
-        response = requests.get(myurl)
-        b = response.content
-        offset = [(x - center_x) * 1024, (y - center_y) * 1024]
-        Hc(b, msp, offset)
-        print(x, ', ', y, "finished")
+iterator = tqdm(range(dx*dy*4))
+for i in iterator:
+    x = center_x - dx + (i % (dx * 2))
+    y = center_y - dy + (i // (dy * 2))
+    
+    myurl = geturl(x=x, y=y, z=z, styles=style, scaler=scale, showtext=showtext, udt=udt)
+    response = requests.get(myurl)
+    b = response.content
+    offset = [(x - center_x) * 1024, (y - center_y) * 1024]
+    Hc(b, msp, offset)
+    iterator.set_description('{:d}, {:d} finished'.format(x, y))
         
 doc.saveas("output.dxf")
         
