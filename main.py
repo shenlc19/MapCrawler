@@ -8,7 +8,7 @@ from VectorTileParser import *
 
 z = 17 
 
-encoded_x, encoded_y = 12950418.005677607,4839668.508286618 # 更改横纵坐标
+encoded_x, encoded_y = 12950401.443563435,4839482.649214438 # 更改横纵坐标
 showtext = 1
 
 m = 256 * 2 ** (18 - z)
