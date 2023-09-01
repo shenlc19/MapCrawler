@@ -2,13 +2,24 @@ import requests
 import math
 import ezdxf
 import random
-import time
+import datetime
+import sys
 from RequestEncoder import *
 from VectorTileParser import *
+
+def parse_url(url):
+    x, y, z = url.split("@")[1].split(",")
+    x = float(x)
+    y = float(y)
+    z = float(z[:-1])
+    return x, y, z
+
+x, y, z = parse_url(sys.argv[1])
 
 z = 17 
 
 encoded_x, encoded_y = 12950401.443563435,4839482.649214438 # 更改横纵坐标
+encoded_x, encoded_y = x, y
 showtext = 1
 
 m = 256 * 2 ** (18 - z)
@@ -18,6 +29,7 @@ center_y = math.floor(encoded_y / m)
 scale = 2
 baseunits = 256
 udt = 20230724
+udt = datetime.datetime.now().strftime('%Y%m%d')
 style = "pl"
 z = 19
 

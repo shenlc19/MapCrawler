@@ -12,8 +12,8 @@ def parse_url(url):
 # 运行测试脚本
 def run_test():
     url = url_entry.get()
-    params = parse_url(url)
-    result = subprocess.run(["python", "test.py", params], capture_output=True, text=True)
+    params = url
+    result = subprocess.run(["python", "main.py", params], capture_output=True, text=True)
     info_text.config(state=tk.NORMAL)
     info_text.delete("1.0", tk.END)
     info_text.insert(tk.END, result.stdout)
@@ -44,10 +44,7 @@ info_text.pack()
 info_text.config(state=tk.DISABLED)  # 设置为只读
 
 # 添加按钮
-test_button = tk.Button(root, text="测试", command=run_test)
-test_button.pack()
-
-download_button = tk.Button(root, text="下载", command=download_file)
+download_button = tk.Button(root, text="下载", command=run_test)
 download_button.pack()
 
 quit_button = tk.Button(root, text="退出", command=root.quit)
